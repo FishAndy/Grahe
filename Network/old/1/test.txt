@@ -1,0 +1,137 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>ºôµ¸¹Ï</title>
+</head>
+<style>
+	#mynetwork {
+  width: 1980px;
+  height: 1020px;
+  border: 1px solid lightgray;
+}
+</style>
+<script>
+	function move(x)
+	{
+		if(x == 0)
+			network.setOptions( { physics: false } ); 
+		else if(x == 1)
+			network.setOptions( { physics: true } ); 
+	}
+</script>
+<body>
+<form method="post">
+	<input type="text" name="search" />
+    <input type="submit" value="search" />
+    <input type="button" value="stop" onclick="move(0)" />
+    <input type="button" value="move" onclick="move(1)" />
+</form>
+<?php
+	function C_DG($ID , $graphe)
+	{
+		$db = new DB();
+		$Chemical_Disease = $db->SQL_select("SELECT `chemical-disease`.`DiseaseID`,`DiseaseName` 
+											 FROM `chemical-disease`,`disease`
+											 WHERE `ChemicalID`='{$ID}'
+											 AND `chemical-disease`.`DiseaseID` = `disease`.`DiseaseID`");
+
+		for($i = 0 ; $i < count($Chemical_Disease) ; $i++)
+		{
+			$graphe["nodes"][$i+1] = array(
+				"id" => 'Disease'.$i,
+				"label" => $Chemical_Disease[$i]->DiseaseName,
+				"url" => "http://ctdbase.org/detail.go?type=disease&acc=".$Chemical_Disease[$i]->DiseaseID,
+				"color" => array("background" => "yellow"));
+			$graphe["edges"][$i] = array(
+				"from" => 0,
+				"to" => 'Disease'.$i,
+				"url" => "graphe2.php?Chemical=".$search_Chemical[0]->ChemicalID."&Disease=".$Chemical_Disease[$i]->DiseaseID);
+		}	
+		
+		$Chemical_Gene = $db->SQL_select("SELECT `chemical-gene`.`GeneID`,`GeneSymbol`
+										  FROM `chemical-gene`,`gene` 
+										  WHERE `ChemicalID` = '{$ID}'
+										  AND `chemical-gene`.`GeneID` = `gene`.`GeneID`");
+		
+		for($j = 0 ; $j < count($Chemical_Gene) ; $j++)
+		{
+			$graphe["nodes"][$j+$i+1] = array(
+				"id" => 'Gene'.$j,
+				"label" => $Chemical_Gene[$j]->GeneSymbol,
+				"url" => "http://ctdbase.org/detail.go?type=gene&acc=".$Chemical_Gene[$j]->GeneID,
+				"color" => array("background" => "green"));
+			$graphe["edges"][$j+$i] = array(
+				"from" => 0,
+				"to" => 'Gene'.$j,
+				"url" => "graphe2.php?Chemical=".$search_Chemical[0]->ChemicalID."&Disease=".$Chemical_Gene[$j]->GeneID);
+		}
+		return $graphe;
+	}
+if(isset($_POST[search]) && $_POST[search] != NULL)
+{
+	include("db.class.php");
+	$db = new DB();
+	$graphe = array("nodes" => array(),"edges" => array());
+
+	$search_Chemical = $db->SQL_select("SELECT `ChemicalID`,`ChemicalName` FROM `chemical` 
+							  			WHERE `ChemicalID`='$_POST[search]'
+							  			OR `ChemicalName`='$_POST[search]'
+							 			OR `CasRN`='$_POST[search]'");
+	if(isset($search_Chemical[0]->ChemicalID) && $search_Chemical[0]->ChemicalID != NULL)
+	{
+		$graphe["nodes"][0] = array(
+				"id" => 0,
+				"label" => $search_Chemical[0]->ChemicalName,
+				"url" => "http://ctdbase.org/detail.go?type=chem&acc=".$search_Chemical[0]->ChemicalID,
+				"color" => array("background" => "red"));
+
+		$graphe = C_DG($search_Chemical[0]->ChemicalID , $graphe);
+	}//C000515
+}//SELECT * FROM `chemical-disease` WHERE `ChemicalID`='C006632' AND `DiseaseID` = 'MESH:D001145'
+print_r($graphe);
+?>
+
+
+<div id="mynetwork"></div>
+<script src="vis.js"></script>
+<script type="text/javascript">
+	var nodes = new vis.DataSet(<?php echo json_encode($graphe["nodes"]); ?>);
+	var edges = new vis.DataSet(<?php echo json_encode($graphe["edges"]); ?>);    
+    // create a network
+    var container = document.getElementById('mynetwork');
+    var data = {
+        nodes: nodes,
+        edges: edges
+    };
+    var options = {
+		/*physics: {
+   			 barnesHut: {
+      			springConstant: 0.001,
+      			damping: 1,
+      			avoidOverlap: 1
+			}
+    	}*/
+	};
+    var network = new vis.Network(container, data, options);
+	
+   /* network.on("selectNode", function (params) {
+        if (params.nodes.length === 1) {
+            var node = nodes.get(params.nodes[0]);
+            window.open(node.url, '_blank');
+        }
+    });*/
+	network.on("click", function(params) {  
+	//network.setOptions( { physics: false } );                       
+    if (params.nodes.length === 1) {
+		var node = nodes.get(params.nodes[0]);
+        window.open(node.url, '_blank');
+		}        
+     else if (params.edges.length==1) {
+		 var edge = edges.get(params.edges[0]);
+		 window.open(edge.url, '_blank');
+		 } 
+});
+</script>
+</body>
+</html>

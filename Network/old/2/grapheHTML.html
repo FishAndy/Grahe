@@ -1,0 +1,37 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>無標題文件</title>
+    </head>
+    <style>
+	#mynetwork {
+	  width: 1980px;
+	  height: 1020px;
+	  border: 1px solid lightgray;
+	}
+	</style>
+    <script type="text/javascript" src="vis.js"></script>
+   	<script src="//code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="grapheJS.js"></script>
+    <body>
+    <form>
+        <input type="text" id="search" />
+        <select id="sel1">
+        	<option value="All">All</option>
+            <option value="Chemical">Chemical</option>
+            <option value="Disease">Disease</option>
+            <option value="Gene">Gene</option>
+        </select>
+        <select id="sel2">
+        	<option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </select>
+        <input type="button" value="search" id="go"/>
+    </form>
+    <div id="mynetwork"></div>
+    </body>
+</html>
