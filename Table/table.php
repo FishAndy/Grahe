@@ -2,7 +2,6 @@
 <script src="https://cdn.bootcss.com/jquery/2.1.1/jquery.min.js"></script>
 <script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
 <?php
-
 	if($_GET[Graph] == 'Network')
 	{
 		include("../Class/db.class.php");
@@ -40,7 +39,20 @@
 	}
 	else if($_GET[Graph] == 'Histogram')
 	{
+		include("../Class/db.class.php");
+		$db = new DB();
 		echo "<script>window.alert('施工中')</script>";
+		switch($_GET['Case'])
+		{
+			case 'Chemical':
+				break;
+			case 'Disease':
+				$ansql = Disease_PubM($_GET[Object],$_GET[Year],$db);
+				break;
+			case 'Gene':
+				break;
+		}
+		new_table($ansql,$db);
 	}
 	
 	function new_table($arr,$db)
@@ -77,43 +89,6 @@
 			echo "</table>";
 		echo "</div>";
 	}
-	/*function PubMedID_Search($ID,$db)
-	{
-		$sql = "SELECT `chemical`.`ChemicalID`,`chemical`.`ChemicalName`
-				FROM `chemical`,`chemical_disease`,`chemical_gene`
-				WHERE `chemical_disease`.`PubMedIDs` = '$ID'
-				AND`chemical_gene`.`PubMedIDs` = '$ID'
-				AND (`chemical_disease`.`ChemicalID` = `chemical`.`ChemicalID`
-					 OR `chemical_gene`.`ChemicalID` = `chemical`.`ChemicalID`)
-				GROUP BY `ChemicalID`";
-		$ans = $db->SQL_select($sql);
-		if(isset($ans[0]))
-			$ansql[] = $ans;
-		
-		$sql = "SELECT `disease`.`DiseaseID`,`disease`.`DiseaseName`
-				FROM `disease`,`chemical_disease`,`gene_disease`
-				WHERE `chemical_disease`.`PubMedIDs` = '$ID'
-				AND `gene_disease`.`PubMedIDs` = '$ID'
-				AND (`chemical_disease`.`DiseaseID` = `disease`.`DiseaseID`
-					 OR `gene_disease`.`DiseaseID` = `disease`.`DiseaseID`)
-				GROUP BY `DiseaseID`";
-		$ans = $db->SQL_select($sql);
-		if(isset($ans[0]))
-			$ansql[] = $ans;
-		
-		$sql = "SELECT `gene`.`GeneID`,`gene`.`GeneSymbol`
-				FROM `gene`,`chemical_gene`,`gene_disease`
-				WHERE `chemical_gene`.`PubMedIDs` = '$ID'
-				AND `gene_disease`.`PubMedIDs` = '$ID'
-				AND (`chemical_gene`.`GeneID` = `gene`.`GeneID`
-					 or `gene_disease`.`GeneID` = `gene`.`GeneID`)
-				GROUP BY `GeneID`";
-		$ans = $db->SQL_select($sql);
-		if(isset($ans[0]))
-			$ansql[] = $ans;
-			
-		return $ansql;
-	}	*/
 	function PubMedID_Search($ID,$db)
 	{
 		$arr = array('Chemical'=>array(),'Disease'=>array(),'Gene'=>array());
@@ -210,6 +185,43 @@
 		
 		return $arr;
 	}
+	function Chemical_PubM($Object,$Year,$db)
+	{
+		
+	}
+	function Disease_PubM($Object,$Year,$db)
+	{
+		$sql = "CREATE OR REPLACE VIEW temp AS
+				SELECT `pubmed`.`year`,`pubmed`.`PubMedIDs`
+				FROM `chemical_disease`,`pubmed`
+				WHERE `pubmed`.`year` = '$Year'
+				AND `chemical_disease`.`DiseaseID` = '$Object'
+				AND `chemical_disease`.`PubMedIDs` = `pubmed`.`PubMedIDs`
+				GROUP BY `pubmed`.`PubMedIDs`";
+		$ans = $db->SQL_query($sql);
+		$sql = "SELECT `year`,`PubMedIDs` FROM `temp`";
+		$A = $db->SQL_select($sql);
+		$sql = "SELECT DISTINCT `pubmed`.`year`,`pubmed`.`PubMedIDs` 
+				FROM `gene_disease`,`temp`,`pubmed` 
+				WHERE `gene_disease`.`DiseaseID` = '$Object'
+				AND `pubmed`.`year` = '$Year' 
+				AND `gene_disease`.`PubMedIDs` = `pubmed`.`PubMedIDs` 
+				AND `gene_disease`.`DiseaseID` != `temp`.`PubMedIDs`
+				";
+		$B = $db->SQL_select($sql);
+		return array_merge($A,$B);
+	}
+	function Gene_PubM($Object,$Year,$db)
+	{
+		
+	}
+	/*CREATE OR REPLACE VIEW temp AS
+SELECT `pubmed`.`PubMedIDs`
+FROM `chemical_disease`,`pubmed`
+WHERE `pubmed`.`year` = 2000
+AND `chemical_disease`.`DiseaseID` = 'MESH:D001249'
+AND `chemical_disease`.`PubMedIDs` = `pubmed`.`PubMedIDs`
+GROUP BY `pubmed`.`PubMedIDs`*/
 ?>
 <script>
 		$(function () { $('.popover-show').popover('show');});
